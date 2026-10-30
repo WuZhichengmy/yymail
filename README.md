@@ -21,21 +21,24 @@ python3 -m http.server 4173 --directory public
 
 然后访问 http://localhost:4173。
 
-## Cloudflare Pages 部署
+## Cloudflare Workers 部署
 
-在 Cloudflare 控制台进入 **Workers & Pages → Create application → Pages → Import an existing Git repository**，选择 GitHub 仓库 `WuZhichengmy/yymail`，填写：
+在 Cloudflare 控制台进入 **Workers & Pages → Create application**，连接 GitHub 仓库 `WuZhichengmy/yymail`，填写：
 
 | 设置 | 值 |
 | --- | --- |
-| Production branch | `main` |
-| Framework preset | `None` |
+| Project name | `yymail` |
 | Root directory | 保持默认（仓库根目录） |
-| Build command | `exit 0` |
-| Build output directory | `public` |
+| Build command | 留空 |
+| Deploy command | `npx wrangler deploy` |
+| Preview command | `npx wrangler preview` |
+| Enable Preview builds | 可开启 |
+| Protect with Cloudflare Access | 关闭，网站可公开访问 |
+| Production branch（如显示） | `main` |
 
-保存并部署后，Cloudflare 会生成实际的 `*.pages.dev` 访问地址。之后推送到 `main` 的修改会触发自动部署。
+保存并部署后，Cloudflare 会给出实际的 `*.workers.dev` 访问地址。之后推送到 `main` 的修改会触发自动部署。
 
-配置参考：[Cloudflare 静态 HTML 官方部署指南](https://developers.cloudflare.com/pages/framework-guides/deploy-anything/)。`wrangler.toml` 同时声明了 Pages 输出目录，便于后续使用 Wrangler 部署。
+配置参考：[Cloudflare Workers Static Assets](https://developers.cloudflare.com/workers/static-assets/)。`wrangler.toml` 通过 `assets.directory` 指向 `public`；静态网站无需额外 Worker 脚本，也无需安装前端依赖。
 
 ## 文件
 
@@ -46,7 +49,7 @@ public/
   app.js           开关门、触摸反馈及动画暂停
   _headers         Cloudflare 响应头
   assets/          插画底图和透明贴图
-wrangler.toml      Cloudflare Pages 配置
+wrangler.toml      Cloudflare Workers 静态资源配置
 ```
 
 网站与小程序分别维护页面代码。插画素材来自同一组文件；后续更新素材时应同步到两端。
