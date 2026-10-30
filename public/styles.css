@@ -1,0 +1,335 @@
+/* Shared scene geometry and animations from the WeChat mini program. */
+:root { color-scheme: light; background: #fcfdf8; }
+* { box-sizing: border-box; }
+html, body { margin: 0; width: 100%; min-height: 100%; }
+body { font-family: system-ui, sans-serif; }
+button { padding: 0; margin: 0; border: 0; border-radius: 0; background: transparent; color: inherit; font: inherit; }
+button:focus-visible { outline: 2px solid #b87a3d; outline-offset: 4px; border-radius: 4px; }
+img { user-select: none; -webkit-user-drag: none; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+body {
+  height: 100%;
+  background: #fcfdf8;
+}
+
+.home {
+  width: 100%;
+  height: 100vh;
+  height: 100svh;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.scene {
+  position: relative;
+  flex-shrink: 0;
+  width: 100vw;
+  height: 100vw;
+  max-width: 100vh;
+  max-height: 100vh;
+  width: min(100vw, 100svh);
+  height: min(100vw, 100svh);
+}
+
+.scene-background {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.hotspot {
+  position: absolute;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sprite {
+  display: block;
+  position: absolute;
+  pointer-events: none;
+}
+
+/* Positions use the original 1254 x 1254 illustration coordinates. */
+.mailbox-zone {
+  left: 15.47%;
+  top: 43.38%;
+  width: 17.70%;
+  height: 38.12%;
+  z-index: 3;
+}
+
+.mailbox-sprite {
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  transform-origin: 50% 100%;
+  transition: transform 320ms ease, filter 360ms ease;
+}
+
+.mailbox-zone.is-active .mailbox-sprite {
+  transform: translateY(-7px) scale(1.055) rotate(-0.6deg);
+  filter: drop-shadow(0 0 12px rgba(255, 203, 105, 0.68));
+}
+
+.stall-zone {
+  left: 53.27%;
+  top: 48.80%;
+  width: 29.74%;
+  height: 31.42%;
+  z-index: 2;
+}
+
+.awning-sprite {
+  left: 3.22%;
+  top: 5.08%;
+  width: 95.70%;
+  height: 24.62%;
+  transform-origin: 50% 0;
+  transition: filter 300ms ease;
+  animation: awning-idle 6s ease-in-out infinite;
+}
+
+.stall-zone.is-active .awning-sprite {
+  animation: awning-breeze 1400ms ease-in-out 1;
+  filter: brightness(1.14) drop-shadow(0 4px 3px rgba(79, 67, 37, 0.2));
+}
+
+.box-zone {
+  left: 79.43%;
+  top: 73.21%;
+  width: 15.47%;
+  height: 12.28%;
+  z-index: 4;
+}
+
+.envelope-sprite {
+  left: 29.90%;
+  top: 0;
+  width: 45.36%;
+  height: 43.51%;
+  transform-origin: 50% 100%;
+}
+
+.box-zone.is-active .envelope-sprite {
+  animation: envelope-hop 900ms ease-in-out 1;
+}
+
+@keyframes envelope-hop {
+  0%, 100% { transform: translateY(0) rotate(0); }
+  35% { transform: translateY(-12px) rotate(-7deg) scale(1.06); }
+  62% { transform: translateY(-2px) rotate(4deg); }
+  80% { transform: translateY(-5px) rotate(-2deg); }
+}
+
+@keyframes awning-breeze {
+  0%, 100% { transform: skewX(0) rotate(0) scaleY(1); }
+  20% { transform: skewX(-5deg) rotate(-1.6deg) scaleY(0.84); }
+  43% { transform: skewX(4deg) rotate(1.3deg) scaleY(1.14); }
+  65% { transform: skewX(-3deg) rotate(-0.9deg) scaleY(0.92); }
+  82% { transform: skewX(1.5deg) rotate(0.5deg) scaleY(1.05); }
+}
+
+@keyframes awning-idle {
+  0%, 100% { transform: skewX(-0.5deg) scaleY(1); }
+  50% { transform: skewX(0.7deg) scaleY(1.025); }
+}
+
+.breeze-lines {
+  position: absolute;
+  right: -5%;
+  top: 10%;
+  width: 25%;
+  height: 12%;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.wind-line {
+  position: absolute;
+  height: 20%;
+  border-top: 1px solid rgba(124, 148, 98, 0.7);
+  border-radius: 50%;
+  width: 100%;
+}
+
+.wind-line-two { top: 40%; left: 15%; width: 70%; }
+
+.stall-zone.is-active .breeze-lines {
+  animation: breeze-trace 1400ms ease-in-out 1;
+}
+
+@keyframes breeze-trace {
+  0%, 100% { opacity: 0; transform: translateX(-4px); }
+  25%, 60% { opacity: 0.8; }
+  80% { opacity: 0; transform: translateX(8px); }
+}
+
+.door-zone {
+  left: 39.394%;
+  top: 49.601%;
+  width: 11.164%;
+  height: 23.206%;
+  z-index: 2;
+  perspective: 500px;
+}
+
+.door-leaf {
+  top: 0;
+  height: 100%;
+  backface-visibility: hidden;
+  transition: transform 950ms cubic-bezier(0.22, 0.68, 0.22, 1), filter 950ms ease;
+}
+
+.door-left { left: 0; width: 50.714%; transform-origin: 0 50%; }
+.door-right { right: 0; width: 49.286%; transform-origin: 100% 50%; }
+.door-zone.is-open .door-left { transform: rotateY(78deg); filter: brightness(0.78); }
+.door-zone.is-open .door-right { transform: rotateY(-78deg); filter: brightness(0.78); }
+
+.door-warmth {
+  position: absolute;
+  left: -35%;
+  bottom: -12%;
+  width: 170%;
+  height: 40%;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(ellipse, rgba(255, 201, 107, 0.38), transparent 70%);
+  transition: opacity 900ms ease;
+}
+
+.door-zone.is-open .door-warmth { opacity: 1; }
+
+.atmosphere { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
+.ambient { position: absolute; pointer-events: none; }
+
+.chimney-smoke {
+  left: 59.3%;
+  top: 11.0%;
+  width: 15.5%;
+  height: 12.7%;
+  transform-origin: 12% 100%;
+  animation: smoke-drift 7s ease-in-out infinite;
+}
+
+.flying-letter {
+  left: 74.5%;
+  top: 17.5%;
+  width: 8%;
+  height: 7%;
+  animation: letter-float 5s ease-in-out infinite;
+}
+
+.porch-light {
+  left: 43.9%;
+  top: 43.1%;
+  width: 4%;
+  height: 4%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 214, 117, 0.65), rgba(255, 206, 100, 0.15) 45%, transparent 72%);
+  animation: lamp-breathe 3.8s ease-in-out infinite;
+}
+
+.drifting-leaf {
+  width: 1.4%;
+  height: 0.8%;
+  border-radius: 90% 0 90% 0;
+  background: #9eb55d;
+  border: 1px solid rgba(70, 101, 52, 0.5);
+  animation: leaf-drift 11s ease-in-out infinite;
+}
+
+.leaf-one { left: 28%; top: 23%; animation-delay: -2s; }
+.leaf-two { left: 83%; top: 33%; animation-delay: -6s; animation-duration: 13s; }
+.leaf-three { left: 12%; top: 45%; animation-delay: -8s; animation-duration: 15s; }
+
+.firefly {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #fff1b1;
+  box-shadow: 0 0 7px 2px rgba(255, 210, 100, 0.45);
+  animation: firefly-wander 6s ease-in-out infinite;
+}
+
+.firefly-one { left: 34%; top: 65%; animation-delay: -1s; }
+.firefly-two { left: 79%; top: 70%; animation-delay: -3s; }
+.firefly-three { left: 48%; top: 77%; animation-delay: -5s; }
+.firefly-four { left: 17%; top: 64%; animation-delay: -2s; }
+
+@keyframes smoke-drift {
+  0%, 100% { transform: translate(0, 0) rotate(-2deg) scale(0.96); opacity: 0.85; }
+  50% { transform: translate(5px, -7px) rotate(3deg) scale(1.06); opacity: 0.65; }
+}
+
+@keyframes letter-float {
+  0%, 100% { transform: translateY(0) rotate(-4deg); }
+  50% { transform: translateY(-8px) rotate(5deg); }
+}
+
+@keyframes lamp-breathe {
+  0%, 100% { opacity: 0.5; transform: scale(0.95); }
+  50% { opacity: 1; transform: scale(1.3); }
+}
+
+@keyframes leaf-drift {
+  0% { transform: translate(0, -8px) rotate(-30deg); opacity: 0; }
+  15%, 75% { opacity: 0.8; }
+  50% { transform: translate(16px, 18px) rotate(110deg); }
+  100% { transform: translate(-4px, 50px) rotate(230deg); opacity: 0; }
+}
+
+@keyframes firefly-wander {
+  0%, 100% { transform: translate(0, 0); opacity: 0.1; }
+  35% { opacity: 0.9; }
+  50% { transform: translate(7px, -11px); opacity: 0.6; }
+  75% { transform: translate(-4px, -5px); opacity: 0.85; }
+}
+
+.scene.is-paused .ambient,
+.scene.is-paused .awning-sprite,
+.scene.is-paused .breeze-lines { animation-play-state: paused; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ambient,
+  .awning-sprite,
+  .breeze-lines { animation: none; }
+
+  .drifting-leaf,
+  .firefly { opacity: 0; }
+
+  .door-leaf,
+  .door-warmth { transition-duration: 1ms; }
+
+  .mailbox-zone:hover .mailbox-sprite,
+  .mailbox-zone.is-active .mailbox-sprite {
+    transform: none;
+  }
+
+  .box-zone:hover .envelope-sprite,
+  .box-zone.is-active .envelope-sprite,
+  .stall-zone:hover .awning-sprite,
+  .stall-zone.is-active .awning-sprite {
+    animation: none;
+  }
+
+  .stall-zone:hover .breeze-lines,
+  .stall-zone.is-active .breeze-lines { animation: none; }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .mailbox-zone:hover .mailbox-sprite { transform: translateY(-7px) scale(1.055) rotate(-0.6deg); filter: drop-shadow(0 0 12px rgba(255, 203, 105, 0.68)); }
+  .stall-zone:hover .awning-sprite { animation: awning-breeze 1400ms ease-in-out 1; filter: brightness(1.14) drop-shadow(0 4px 3px rgba(79, 67, 37, 0.2)); }
+  .stall-zone:hover .breeze-lines { animation: breeze-trace 1400ms ease-in-out 1; }
+  .box-zone:hover .envelope-sprite { animation: envelope-hop 900ms ease-in-out 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mailbox-zone:hover .mailbox-sprite { transform: none; }
+  .stall-zone:hover .awning-sprite,
+  .stall-zone:hover .breeze-lines,
+  .box-zone:hover .envelope-sprite { animation: none; }
+}

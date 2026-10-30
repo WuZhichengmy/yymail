@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#fcfdf8">
+  <meta name="description" content="绿树与鲜花环绕的解忧杂货铺。轻触邮筒、信封和报纸摊，推开一扇温暖的门。">
+  <title>解忧杂货铺</title>
+  <link rel="icon" href="assets/flying-letter.png" type="image/png">
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <main class="home">
+    <h1 class="sr-only">解忧杂货铺</h1>
+    <p id="scene-instructions" class="sr-only">点击门可以打开或关闭。将鼠标移到邮筒、纸箱或报纸摊上，或轻触它们，可以发现小小的回应。</p>
+    <section class="scene" aria-label="插画中的解忧杂货铺" aria-describedby="scene-instructions">
+      <img class="scene-background" src="assets/background-v2.jpg" alt="绿树与鲜花环绕的杂货铺，门前有红色邮筒、报纸摊和装信的纸箱。" width="1152" height="1152" fetchpriority="high" draggable="false">
+
+      <div class="atmosphere" aria-hidden="true">
+        <img class="ambient chimney-smoke" src="assets/smoke.png" alt="" draggable="false">
+        <img class="ambient flying-letter" src="assets/flying-letter.png" alt="" draggable="false">
+        <div class="ambient porch-light"></div>
+        <div class="ambient drifting-leaf leaf-one"></div>
+        <div class="ambient drifting-leaf leaf-two"></div>
+        <div class="ambient drifting-leaf leaf-three"></div>
+        <div class="ambient firefly firefly-one"></div>
+        <div class="ambient firefly firefly-two"></div>
+        <div class="ambient firefly firefly-three"></div>
+        <div class="ambient firefly firefly-four"></div>
+      </div>
+
+      <button class="hotspot door-zone" type="button" aria-label="打开杂货铺的门" aria-expanded="false">
+        <span class="door-warmth" aria-hidden="true"></span>
+        <img class="sprite door-leaf door-left" src="assets/door-left.jpg" alt="" draggable="false">
+        <img class="sprite door-leaf door-right" src="assets/door-right.jpg" alt="" draggable="false">
+      </button>
+
+      <button class="hotspot mailbox-zone" type="button" data-object="mailbox" aria-label="邮筒：让它浮起并泛起暖光">
+        <img class="sprite mailbox-sprite" src="assets/mailbox.png" alt="" draggable="false">
+      </button>
+
+      <button class="hotspot stall-zone" type="button" data-object="stall" aria-label="报纸摊：让遮阳棚随风摆动">
+        <img class="sprite awning-sprite" src="assets/awning.png" alt="" draggable="false">
+        <span class="breeze-lines" aria-hidden="true">
+          <span class="wind-line wind-line-one"></span>
+          <span class="wind-line wind-line-two"></span>
+        </span>
+      </button>
+
+      <button class="hotspot box-zone" type="button" data-object="box" aria-label="纸箱：让信封轻轻弹跳">
+        <img class="sprite envelope-sprite" src="assets/envelope.png" alt="" draggable="false">
+      </button>
+    </section>
+  </main>
+</body>
+</html>
