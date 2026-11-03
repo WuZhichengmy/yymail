@@ -8,11 +8,16 @@ const SCHEMA = `CREATE TABLE IF NOT EXISTS travel_workspaces (
   revision INTEGER NOT NULL DEFAULT 1,
   updated_at TEXT NOT NULL
 )`;
+const ROOM_SCHEMA = `CREATE TABLE IF NOT EXISTS travel_rooms (
+  room_name TEXT PRIMARY KEY,
+  owner_token TEXT NOT NULL UNIQUE,
+  created_at TEXT NOT NULL
+)`;
 const json = (data, status = 200) => Response.json(data, { status, headers: { 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' } });
 
 async function ownerFor(request) {
   const token = request.headers.get('Authorization')?.match(/^Bearer (yy_[a-f0-9]{64})$/)?.[1];
-  if (!token) throw Object.assign(new Error('请先设置有效的私人同步码'), { status: 401 });
+  if (!token) throw Object.assign(new Error('请先进入旅行房间'), { status: 401 });
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token));
   return [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, '0')).join('');
 }
@@ -42,7 +47,7 @@ function throttle(owner) {
 async function prepareDB(db) {
   if (!db) throw Object.assign(new Error('云端数据库尚未连接，本机草稿仍会保留'), { status: 503 });
   if (!initialized.has(db)) {
-    const task = db.prepare(SCHEMA).run().catch(e => { initialized.delete(db); throw e; });
+    const task = (async () => { await db.prepare(SCHEMA).run(); await db.prepare(ROOM_SCHEMA).run(); })().catch(e => { initialized.delete(db); throw e; });
     initialized.set(db, task);
   }
   await initialized.get(db);
@@ -69,6 +74,24 @@ export async function handleTravel(request, env) {
     if (url.pathname.startsWith('/_AMapService/')) return await proxyMap(request, env, url);
     if (url.pathname === '/api/travel/config' && request.method === 'GET') {
       return json({ mapKey: env.AMAP_JS_KEY || '', mapReady: Boolean(env.AMAP_JS_KEY && env.AMAP_JS_SECURITY), searchReady: Boolean(env.AMAP_WEB_KEY), cloudReady: Boolean(env.YY_DB) });
+    }
+    if (url.pathname === '/api/travel/room') {
+      if (request.method !== 'POST') return json({ error: '请填写房间号后进入' }, 405);
+      throttle('room:' + (request.headers.get('CF-Connecting-IP') || 'local'));
+      const input = await readJSON(request);
+      const name = typeof input.room === 'string' ? input.room.trim().toLowerCase() : '';
+      if (!/^[a-z0-9_-]{2,40}$/.test(name)) return json({ error: '房间号需为 2–40 位英文字母、数字、横线或下划线' }, 400);
+      await prepareDB(env.YY_DB);
+      // Provision the requested initial room from a server secret, never from public source.
+      const initial = (env.TRAVEL_ROOM_NAME || '').trim().toLowerCase();
+      if (/^[a-z0-9_-]{2,40}$/.test(initial)) {
+        const bytes = crypto.getRandomValues(new Uint8Array(32));
+        const roomToken = 'yy_' + [...bytes].map(b => b.toString(16).padStart(2, '0')).join('');
+        await env.YY_DB.prepare('INSERT OR IGNORE INTO travel_rooms (room_name, owner_token, created_at) VALUES (?, ?, ?)').bind(initial, roomToken, new Date().toISOString()).run();
+      }
+      const room = await env.YY_DB.prepare('SELECT room_name, owner_token FROM travel_rooms WHERE room_name = ?').bind(name).first();
+      if (!room) return json({ error: '没有找到这个房间，请检查房间号' }, 404);
+      return json({ room: room.room_name, token: room.owner_token });
     }
     if (!['/api/travel/workspace', '/api/travel/search'].includes(url.pathname)) return json({ error: '接口不存在' }, 404);
     const owner = await ownerFor(request);

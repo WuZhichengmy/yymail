@@ -4,18 +4,17 @@ const $ = selector => document.querySelector(selector);
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const uid = () => crypto.randomUUID();
 const tokenPattern = /^yy_[a-f0-9]{64}$/;
-const newToken = () => 'yy_' + [...crypto.getRandomValues(new Uint8Array(32))].map(b => b.toString(16).padStart(2,'0')).join('');
 const empty = () => ({version:1, activeTripId:null, trips:[]});
 const localDate = (offset=0) => { const d=new Date();d.setDate(d.getDate()+offset);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
 const dayDate = (trip, day) => new Date(Date.parse(trip.startDate)+(day-1)*86400000).toISOString().slice(5,10).replace('-','.');
-let token, state=empty(), revision=0, dirty=false, syncing=false, conflict=false, ready=false, generation=0, day='all', selected=null, editingTrip=false, editingPlace=null;
+let token=null, roomName='', state=empty(), revision=0, dirty=false, syncing=false, conflict=false, ready=false, generation=0, day='all', selected=null, editingTrip=false, editingPlace=null;
 let map=null, markers=[], lines=[], mapConfig=null, queue=[], queueTotal=0, searchSession=0, toastTimer, saveTimer;
 let storageAvailable=true;
-try { token=localStorage.getItem('yytravel.token');if(!tokenPattern.test(token||'')){token=newToken();localStorage.setItem('yytravel.token',token);} } catch {token=newToken();storageAvailable=false;}
+let rememberedRoom='';try{rememberedRoom=localStorage.getItem('yytravel.room')||'';}catch{storageAvailable=false;}
 const cacheKey = () => 'yytravel.workspace.'+token.slice(-20);
 function status(text,error=false){$('#sync-status').textContent=text;$('#sync-status').classList.toggle('error',error);}
 function toast(message){clearTimeout(toastTimer);$('#toast').textContent=message;$('#toast').hidden=false;toastTimer=setTimeout(()=>$('#toast').hidden=true,4200);}
-function cache(){try{localStorage.setItem(cacheKey(),JSON.stringify({state,revision,dirty}));return true;}catch{storageAvailable=false;return false;}}
+function cache(){if(!token)return true;try{localStorage.setItem(cacheKey(),JSON.stringify({state,revision,dirty}));return true;}catch{storageAvailable=false;return false;}}
 function readCache(){try{const c=JSON.parse(localStorage.getItem(cacheKey()));if(c){state=validateWorkspace(c.state);revision=Number.isSafeInteger(c.revision)?c.revision:0;dirty=Boolean(c.dirty);}}catch{state=empty();revision=0;dirty=false;}}
 function trip(){return state.trips.find(t=>t.id===state.activeTripId)||null;}
 function changed(){generation++;dirty=true;const saved=cache();status(saved?'本机已保存 · 待同步':'本机存储不可用，请导出备份',!saved);clearTimeout(saveTimer);saveTimer=setTimeout(saveCloud,1000);render();}
@@ -29,10 +28,10 @@ async function saveCloud(){
 }
 async function bootstrap(){
   readCache();render();status(dirty?'已恢复本机草稿':'正在连接云端…');
-  try{const result=await api('workspace');if(result.workspace){if(dirty&&revision!==result.revision){conflict=true;status('本机与云端都有修改',true);}else if(!dirty){state=validateWorkspace(result.workspace);revision=result.revision;cache();render();status('已从云端恢复');}else status('本机草稿待同步');}else if(revision>0){conflict=true;status('云端记录不存在 · 请检查同步码',true);}else status(dirty?'本机草稿待同步':'已连接云端');}
+  try{const result=await api('workspace');if(result.workspace){if(dirty&&revision!==result.revision){conflict=true;status('本机与云端都有修改',true);}else if(!dirty){state=validateWorkspace(result.workspace);revision=result.revision;cache();render();status('已从云端恢复');}else status('本机草稿待同步');}else if(revision>0){conflict=true;status('云端记录不存在 · 请检查房间',true);}else status(dirty?'本机草稿待同步':'已连接云端');}
   catch(e){status('仅本机草稿 · 云端未连接',true);$('#sync-message').textContent=e.message;}
   ready=true;if(dirty&&!conflict)saveCloud();
-  if(!storageAvailable)toast('浏览器存储不可用，请妥善复制同步码并及时导出备份');
+  if(!storageAvailable)toast('浏览器存储不可用，下次需要重新输入房间号，请及时导出备份');
 }
 function dayOptions(t,value=0){return `<option value="0" ${value===0?'selected':''}>待安排</option>`+Array.from({length:tripDays(t)},(_,i)=>`<option value="${i+1}" ${value===i+1?'selected':''}>第 ${i+1} 天 · ${dayDate(t,i+1)}</option>`).join('');}
 function visiblePlaces(){const t=trip();if(!t)return [];return t.places.filter(p=>day==='all'||(day==='pending'?p.day===0:p.type==='hotel'&&p.checkIn&&p.checkOut?(t.startDate<=p.checkOut&&new Date(Date.parse(t.startDate)+(Number(day)-1)*86400000).toISOString().slice(0,10)>=p.checkIn&&new Date(Date.parse(t.startDate)+(Number(day)-1)*86400000).toISOString().slice(0,10)<p.checkOut):p.day===Number(day)));}
@@ -88,18 +87,46 @@ $('#manual-place').onclick=()=>{try{const name=queue[0]||$('#search-input').valu
 $('#delete-trip').onclick=async()=>{const t=trip();if(t&&await confirmAction('删除这份行程？',`「${t.name}」的地点和酒店也会一并删除。建议先导出备份。`)){state.trips=state.trips.filter(x=>x.id!==t.id);state.activeTripId=state.trips[0]?.id||null;day='all';selected=null;$('#selection-card').hidden=true;changed();fitMap();}};
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>b.closest('dialog').close());$('#add-dialog').addEventListener('close',()=>{searchSession++;$('#search-button').disabled=false;});
 document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>setView(b.dataset.view));$('#fit-map').onclick=fitMap;
-$('#sync-button').onclick=()=>{$('#sync-code').value=token;$('#restore-code').value='';$('#sync-dialog').showModal();};
-$('#copy-code').onclick=async()=>{try{await navigator.clipboard.writeText(token);toast('同步码已复制，请妥善保存');}catch{$('#sync-code').focus();$('#sync-code').select();toast('请手动复制选中的同步码');}};
-$('#retry-sync').onclick=()=>{if(conflict){$('#sync-message').textContent='为避免覆盖另一台设备的修改，请导出本机备份，再用同一同步码取回云端版本。';return;}dirty=true;cache();saveCloud();};
-$('#restore-workspace').onclick=async()=>{
-  if(!ready){toast('正在连接云端，请稍后恢复');return;}const next=$('#restore-code').value.trim();if(!tokenPattern.test(next)){$('#sync-message').textContent='请粘贴完整的 yy_ 开头同步码';return;}if(syncing){toast('正在保存，请稍后再恢复');return;}
-  if(!await confirmAction('取回云端行程？','当前显示内容将切换为这份同步码对应的云端行程。未同步的修改请先导出备份。'))return;
-  const button=$('#restore-workspace');button.disabled=true;clearTimeout(saveTimer);
-  try{const response=await fetch('/api/travel/workspace',{headers:{Authorization:'Bearer '+next}});const data=await response.json();if(!response.ok)throw new Error(data.error||'恢复失败');if(!data.workspace)throw new Error('这个同步码尚无云端行程，请检查是否复制完整');const restored=validateWorkspace(data.workspace);token=next;state=restored;revision=data.revision;dirty=false;conflict=false;generation++;try{localStorage.setItem('yytravel.token',token);}catch{storageAvailable=false;}cache();$('#sync-code').value=token;day='all';selected=null;$('#selection-card').hidden=true;render();fitMap();status('已从云端恢复');$('#sync-message').textContent='行程已取回，后续修改会自动同步。';toast('欢迎回来，你的旅程都在这里');}catch(e){$('#sync-message').textContent=e.message;}finally{button.disabled=false;}
+function openRoom(first=false){
+  $('#room-title').textContent=first?'先找到我们的旅行房间':'切换旅行房间';
+  $('#room-input').value=first?'':roomName;
+  $('#room-error').textContent='';
+  $('#room-close').hidden=!roomName;
+  $('#room-sync-tools').hidden=!roomName;
+  if(!$('#room-dialog').open)$('#room-dialog').showModal();
+}
+async function enterRoom(name,automatic=false){
+  if(syncing){$('#room-error').textContent='正在保存，请稍等片刻后再切换房间';return;}
+  const button=$('#enter-room');button.disabled=true;$('#room-error').textContent='';
+  try{
+    const response=await fetch('/api/travel/room',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({room:name}),signal:AbortSignal.timeout(25000)});
+    const data=await response.json();if(!response.ok)throw Object.assign(new Error(data.error||'暂时无法进入房间'),{status:response.status});
+    if(!tokenPattern.test(data.token||''))throw new Error('房间连接异常，请稍后重试');
+    clearTimeout(saveTimer);if(token)cache();token=data.token;roomName=data.room;state=empty();revision=0;dirty=false;conflict=false;ready=false;day='all';selected=null;generation++;
+    try{localStorage.setItem('yytravel.room',roomName);localStorage.setItem('yytravel.roomToken',token);}catch{storageAvailable=false;}
+    $('#sync-button').textContent='⌂ '+roomName;$('#selection-card').hidden=true;
+    if($('#room-dialog').open)$('#room-dialog').close();await bootstrap();fitMap();
+    if(!automatic)toast('已进入房间「'+roomName+'」');
+  }catch(e){
+    if(automatic&&!e.status){try{const cached=localStorage.getItem('yytravel.roomToken');if(tokenPattern.test(cached||'')){token=cached;roomName=name;readCache();ready=true;render();fitMap();$('#sync-button').textContent='⌂ '+roomName;status('离线房间 · 本机草稿',true);if($('#room-dialog').open)$('#room-dialog').close();return;}}catch{}}
+    openRoom(true);$('#room-error').textContent=e.message||'房间连接失败，请检查网络';
+  }finally{button.disabled=false;}
+}
+$('#room-form').onsubmit=e=>{e.preventDefault();enterRoom($('#room-input').value.trim().toLowerCase());};
+$('#room-dialog').addEventListener('cancel',e=>{if(!roomName)e.preventDefault();});
+$('#room-close').onclick=()=>$('#room-dialog').close();
+$('#sync-button').onclick=()=>openRoom(!roomName);
+$('#retry-sync').onclick=()=>{if(conflict){$('#sync-message').textContent='房间内有其他人更新了行程，请先导出本机备份，再取回房间最新行程。';return;}dirty=true;cache();saveCloud();};
+$('#refresh-room').onclick=async()=>{
+  if(!ready||syncing){$('#sync-message').textContent='正在连接或保存，请稍后重试';return;}
+  if(dirty&&!await confirmAction('取回房间最新行程？','本机未同步的修改将被房间版本替换，建议先取消并导出备份。'))return;
+  clearTimeout(saveTimer);const button=$('#refresh-room');button.disabled=true;
+  try{const data=await api('workspace');state=data.workspace?validateWorkspace(data.workspace):empty();revision=data.revision;dirty=false;conflict=false;generation++;cache();day='all';selected=null;$('#selection-card').hidden=true;render();fitMap();status('已从房间恢复');$('#sync-message').textContent='已取回房间最新行程。';}
+  catch(e){$('#sync-message').textContent=e.message;}finally{button.disabled=false;}
 };
 $('#export-data').onclick=()=>{const blob=new Blob([JSON.stringify(validateWorkspace(state),null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='圆圆旅行-'+localDate()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
 $('#import-data').onclick=()=>$('#import-file').click();$('#import-file').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{if(file.size>262144)throw new Error('备份文件不能超过 256 KB');const imported=validateWorkspace(JSON.parse(await file.text()));if(!await confirmAction('导入这份旅行备份？','将替换当前同步空间内的所有行程，并保存到云端。'))return;state=imported;day='all';selected=null;$('#selection-card').hidden=true;changed();fitMap();toast('已导入旅行备份');}catch(err){toast(err.message);}finally{e.target.value='';}};
 window.addEventListener('online',()=>{if(dirty&&!conflict)saveCloud();});document.addEventListener('visibilitychange',()=>{if(document.hidden)cache();else if(dirty&&!conflict)saveCloud();});
 
 async function initMap(){try{const response=await fetch('/api/travel/config');mapConfig=await response.json();if(!response.ok||!mapConfig.mapReady)throw new Error('地图尚未配置完成。地点清单和本机草稿仍可使用。');window._AMapSecurityConfig={serviceHost:location.origin+'/_AMapService'};await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='https://webapi.amap.com/maps?v=2.0&key='+encodeURIComponent(mapConfig.mapKey)+'&plugin=AMap.Scale,AMap.ToolBar';const timer=setTimeout(()=>reject(new Error('地图加载超时，请检查网络后刷新页面。')),22000);s.onload=()=>{clearTimeout(timer);resolve();};s.onerror=()=>{clearTimeout(timer);reject(new Error('地图加载失败，请检查网络后刷新页面。'));};document.head.append(s);});if(!window.AMap)throw new Error('地图加载失败，请刷新重试。');map=new AMap.Map('map',{viewMode:'2D',zoom:4,center:[105,35],resizeEnable:true,mapStyle:'amap://styles/normal'});map.addControl(new AMap.Scale({position:'LB',offset:[16,8]}));map.addControl(new AMap.ToolBar({position:'RT',offset:[20,85]}));map.on('complete',()=>{$('#map-status').hidden=true;renderMap(true);if(!markers.length&&trip())map.setCity(trip().city,()=>map.setZoom(11));});map.on('error',()=>toast('地图连接异常，请检查网络或刷新'));$('#map-status').hidden=true;renderMap(true);if(trip()&&!markers.length)map.setCity(trip().city,()=>map.setZoom(11));}catch(e){$('#map-status h2').textContent='地图还在路上';$('#map-status p').textContent=e.message;const b=document.createElement('button');b.className='button secondary';b.textContent='重新加载地图';b.style.marginTop='20px';b.onclick=()=>location.reload();$('#map-status').append(b);}}
-bootstrap();initMap();
+render();initMap();if(rememberedRoom){openRoom(true);$('#room-input').value=rememberedRoom;enterRoom(rememberedRoom,true);}else{status('请先进入旅行房间');openRoom(true);}

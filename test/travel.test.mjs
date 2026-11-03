@@ -47,3 +47,15 @@ test('unknown API endpoints and missing database return explicit errors',async()
  assert.equal((await handleTravel(request('GET',undefined,tokenA,'unknown'),{})).status,404);
  assert.equal((await handleTravel(request('GET'),{})).status,503);
 });
+
+test('room entry resolves a stable shared workspace and rejects unknown room names',async()=>{
+ const env={YY_DB:database(),TRAVEL_ROOM_NAME:'test-room'};
+ const enter=room=>new Request('https://test.example/api/travel/room',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({room})});
+ let response=await handleTravel(enter(' TEST-ROOM '),env);assert.equal(response.status,200);const first=await response.json();assert.equal(first.room,'test-room');assert.match(first.token,/^yy_[a-f0-9]{64}$/);
+ response=await handleTravel(enter('test-room'),env);assert.equal((await response.json()).token,first.token);
+ response=await handleTravel(request('PUT',{workspace:fixture(),revision:0},first.token),env);assert.equal(response.status,200);
+ response=await handleTravel(enter('test-room'),env);const second=await response.json();response=await handleTravel(request('GET',undefined,second.token),env);assert.equal((await response.json()).workspace.trips[0].name,'杭州慢游');
+ assert.equal((await handleTravel(enter('not-existing'),env)).status,404);
+ assert.equal((await handleTravel(enter('../test'),env)).status,400);
+ assert.equal((await handleTravel(new Request('https://test.example/api/travel/room'),env)).status,405);
+});
