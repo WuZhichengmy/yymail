@@ -71,6 +71,27 @@ body {
   transition: transform 320ms ease, filter 360ms ease;
 }
 
+.travel-label {
+  position: absolute;
+  left: 50%;
+  top: -38px;
+  transform: translate(-50%, 5px);
+  padding: 9px 15px;
+  border: 1px solid #dedfcf;
+  border-radius: 30px;
+  background: #fffdf3;
+  color: #49644b;
+  box-shadow: 0 4px 15px #344c3b12;
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 200ms ease, transform 200ms ease;
+  pointer-events: none;
+}
+.mailbox-zone:hover .travel-label,
+.mailbox-zone:focus-visible .travel-label,
+.mailbox-zone.is-active .travel-label { opacity: 1; transform: translate(-50%, 0); }
+
 .mailbox-zone.is-active .mailbox-sprite {
   transform: translateY(-7px) scale(1.055) rotate(-0.6deg);
   filter: drop-shadow(0 0 12px rgba(255, 203, 105, 0.68));

@@ -4,6 +4,13 @@ const scene = document.querySelector('.scene');
 const door = document.querySelector('.door-zone');
 const feedbackDuration = { mailbox: 1100, box: 1000, stall: 1500 };
 const timers = new Map();
+let enteringTravel = false;
+document.querySelector('.mailbox-zone').addEventListener('click', () => {
+  if (enteringTravel) return;
+  enteringTravel = true;
+  document.querySelector('.mailbox-zone').classList.add('is-active');
+  setTimeout(() => { location.href = '/travel/'; }, matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 220);
+});
 
 door.addEventListener('click', () => {
   const isOpen = door.classList.toggle('is-open');

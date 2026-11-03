@@ -1,0 +1,13 @@
+{
+  "name": "yuanyuan-travel",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --port 4173",
+    "check": "node --check src/worker.mjs && node --check public/travel/travel.js && node --test test/*.test.mjs",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}
