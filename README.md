@@ -38,7 +38,19 @@ python3 -m http.server 4173 --directory public
 
 保存并部署后，Cloudflare 会给出实际的 `*.workers.dev` 访问地址。之后推送到 `main` 的修改会触发自动部署。
 
-配置参考：[Cloudflare Workers Static Assets](https://developers.cloudflare.com/workers/static-assets/)。`wrangler.toml` 通过 `assets.directory` 指向 `public`；静态网站无需额外 Worker 脚本，也无需安装前端依赖。
+配置参考：[Cloudflare Workers Static Assets](https://developers.cloudflare.com/workers/static-assets/)。`wrangler.toml` 通过 `assets.directory` 指向 `public`，并以 `src/worker.mjs` 为后端入口。静态资源优先直接提供，后端入口通过 `ASSETS` 绑定保留网站文件访问能力，无需安装前端依赖。
+
+## D1 数据库准备
+
+纯静态资源 Worker 无法添加数据库绑定；本项目已经提供 Worker 脚本入口，部署此版本后即可在控制台添加绑定。
+
+1. 创建 D1 数据库 `yuanyuan-travel`。
+2. 等待 `main` 分支最新版本部署成功。
+3. 进入 `Workers & Pages → yymail → Bindings → Add binding → D1 database`。
+4. 变量名填写 `DB`，选择 `yuanyuan-travel` 并确认添加。
+5. 将数据库名称和 Database ID 同步写入 `wrangler.toml` 的 `[[d1_databases]]` 配置，避免后续 Git 部署覆盖控制台绑定。实际数据库 ID 确认前不放入占位配置。
+
+目前仅完成后端入口准备，尚未创建行程表、登录系统或行程保存接口，网页不会自动持久化旅行数据。
 
 ## 文件
 
@@ -50,6 +62,7 @@ public/
   _headers         Cloudflare 响应头
   assets/          插画底图和透明贴图
 wrangler.toml      Cloudflare Workers 静态资源配置
+src/worker.mjs     后端入口，预留数据库及行程接口扩展
 ```
 
 网站与小程序分别维护页面代码。插画素材来自同一组文件；后续更新素材时应同步到两端。
