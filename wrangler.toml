@@ -5,3 +5,8 @@ compatibility_date = "2026-10-30"
 [assets]
 directory = "./public"
 binding = "ASSETS"
+
+[[d1_databases]]
+binding = "YY_DB"
+database_name = "yuanyuan-travel"
+database_id = "2b985b67-2c18-4fb1-a11d-0dbded2a6235"

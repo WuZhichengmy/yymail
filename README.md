@@ -47,8 +47,8 @@ python3 -m http.server 4173 --directory public
 1. 创建 D1 数据库 `yuanyuan-travel`。
 2. 等待 `main` 分支最新版本部署成功。
 3. 进入 `Workers & Pages → yymail → Bindings → Add binding → D1 database`。
-4. 变量名填写 `DB`，选择 `yuanyuan-travel` 并确认添加。
-5. 将数据库名称和 Database ID 同步写入 `wrangler.toml` 的 `[[d1_databases]]` 配置，避免后续 Git 部署覆盖控制台绑定。实际数据库 ID 确认前不放入占位配置。
+4. 变量名填写 `YY_DB`，选择 `yuanyuan-travel` 并确认添加。
+5. 仓库 `wrangler.toml` 已保存实际数据库 ID 和 `YY_DB` 绑定，后续 Git 部署沿用该配置；后端使用 `env.YY_DB` 访问数据库。
 
 目前仅完成后端入口准备，尚未创建行程表、登录系统或行程保存接口，网页不会自动持久化旅行数据。
 
